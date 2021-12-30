@@ -4,6 +4,7 @@ using MasterService.EndPoint.Api.Models;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace MasterService.EndPoint.Api.Controllers
 {
@@ -21,12 +22,14 @@ namespace MasterService.EndPoint.Api.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login([FromBody] M_AuthenticateRequest date)
+        public IActionResult Login(
+            [FromHeader(Name = "X-SystemName")] string SystemName,
+            [FromBody] M_AuthenticateRequest date)
         {
             try
             {
                 int Hours = Convert.ToInt32(_config.GetSection("ExpireTokenByHour").Value);
-                var Result = new H_JWT(date.Username, date.Password, DateTime.Now.AddHours(Hours), _config).Generator();
+                var Result = new H_JWT(date.Username, date.Password, DateTime.Now.AddHours(Hours), SystemName, _config).Generator();
                 return Ok(new
                 {
                     result = Result.Item1,
@@ -46,13 +49,14 @@ namespace MasterService.EndPoint.Api.Controllers
 
         [HttpPost]
         public async Task<IActionResult> GetData(
-            [FromHeader(Name = "X-ValidToken")][Required] string MasterServiceToken,
-            [FromBody] FetchQuery requset)
+            [FromHeader(Name = "X-ValidToken")] string MasterServiceToken,
+            [FromHeader(Name = "X-SystemName")] string SystemName,
+            [FromBody] object requset)
         {
             try
             {
-                var ress = await _mediator.Send(requset);
-                return Ok("Sucess Token");
+                var Result = await _mediator.Send(new FetchQuery { Request = ConvertObject(requset), SystemName = SystemName });
+                return Ok(new M_MasterResponse().Success(Result));
             }
             catch (Exception ex)
             {
@@ -60,6 +64,43 @@ namespace MasterService.EndPoint.Api.Controllers
             }
         }
 
-    }
+        protected Dictionary<string, object> ConvertObject(object requset)
+        {
+            string serializedObject = JsonSerializer.Serialize(requset);
 
+            Dictionary<string, object> data = new Dictionary<string, object>();
+            var d = JsonDocument.Parse(serializedObject);
+            var result = d.RootElement.EnumerateObject();
+            foreach (var r in result)
+            {
+                try
+                {
+                    if (r.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var Value = r.Value.GetString();
+                        data.Add(r.Name, Value);
+                    }
+                    else if (r.Value.ValueKind == JsonValueKind.Number)
+                    {
+                        var Value = r.Value.GetDecimal();
+                        data.Add(r.Name, Value);
+                    }
+                    else if (r.Value.ValueKind == JsonValueKind.True)
+                    {
+                        var Value = r.Value.GetBoolean();
+                        data.Add(r.Name, Value);
+                    }
+                    else if (r.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        data.Add(r.Name, null);
+                    }
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return data;
+        }
+    }
 }

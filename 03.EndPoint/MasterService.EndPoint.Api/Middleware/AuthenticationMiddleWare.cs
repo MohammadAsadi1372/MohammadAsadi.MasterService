@@ -1,35 +1,63 @@
 ﻿using MasterService.EndPoint.Api.Helper;
+using MasterService.EndPoint.Api.Models;
 
 namespace MasterService.EndPoint.Api.Middleware
 {
     public class AuthenticationMiddleWare
     {
         private RequestDelegate nextDelegate;
-        private readonly IConfiguration config;
+        private readonly IConfiguration _config;
 
-        public AuthenticationMiddleWare(RequestDelegate next,IConfiguration config)
+        public AuthenticationMiddleWare(RequestDelegate next, IConfiguration config)
         {
             nextDelegate = next;
-            this.config = config;
+            this._config = config;
         }
         public async Task Invoke(HttpContext httpContext)
         {
-            var Path = httpContext.Request.Path;
-            if (!Path.Value.Contains("Login"))
+            try
             {
-                if (IsUserValid(httpContext))
-                    await nextDelegate.Invoke(httpContext);
+                var Data = _config.GetSection("Services").Get<List<M_Services>>();
+                if (Data != null)
+                {
+                    string SystemName = httpContext.Request.Headers["X-SystemName"];
+                    if (string.IsNullOrEmpty(SystemName))
+                        await httpContext.Response
+                            .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: نام سیستم را مشخص کنید");
+                    else
+                        foreach (var item in Data)
+                            if (item.ServiceName == SystemName)
+                                if (!item.HaveLogin)
+                                    await nextDelegate.Invoke(httpContext);
+                                else
+                                {
+                                    var Path = httpContext.Request.Path;
+                                    if (!Path.Value.Contains("Login"))
+                                    {
+                                        if (IsUserValid(httpContext, SystemName))
+                                            await nextDelegate.Invoke(httpContext);
+                                        else
+                                            await httpContext.Response
+                                                .WriteAsync($"Status Code: {401} " + Environment.NewLine + "Status Message:  Security error ");
+                                    }
+                                    else
+                                        await nextDelegate.Invoke(httpContext);
+                                }
+                }
                 else
                     await httpContext.Response
-                        .WriteAsync($"Status Code: {401} " + Environment.NewLine + "Status Message:  Security error ");
+                        .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: تنظیمات سیستم را وارد نمایید");
             }
-            else
-                await nextDelegate.Invoke(httpContext);
+            catch (Exception ex)
+            {
+                await httpContext.Response
+                    .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message:  {ex.Message} ");
+            }
         }
 
-        private bool IsUserValid(HttpContext httpContext)
+        private bool IsUserValid(HttpContext httpContext,string SystemName)
         {
-            if (new H_JWT(this.config).ISValidToken(httpContext.Request.Headers["X-ValidToken"])
+            if (new H_JWT(this._config, SystemName).ISValidToken(httpContext.Request.Headers["X-ValidToken"])
                 && !string.IsNullOrEmpty(httpContext.Request.Headers["X-ValidToken"]))
                 return true;
             else

@@ -7,18 +7,21 @@ namespace MasterService.EndPoint.Api.Helper
         private string _username;
         private string _password;
         private DateTime _expireTime;
+        private readonly string _systemname;
         private readonly IConfiguration _config;
 
-        public H_JWT(IConfiguration config)
+        public H_JWT(IConfiguration config, string systemName)
         {
             _config = config;
+            _systemname = systemName;
         }
 
-        public H_JWT(string Username, string Password, DateTime ExpireTime, IConfiguration config)
+        public H_JWT(string Username, string Password, DateTime ExpireTime, string Systemname, IConfiguration config)
         {
             _username = Username;
             _password = Password;
             _expireTime = ExpireTime;
+            _systemname = Systemname;
             _config = config;
         }
 
@@ -26,16 +29,19 @@ namespace MasterService.EndPoint.Api.Helper
         {
             if (string.IsNullOrEmpty(_username))
                 return new Tuple<string, bool>("مقدار نام کاربری درج نگردیده است", false);
-            var Result = _config.GetSection("login").Get<List<M_AuthenticateRequest>>();
-            foreach (var item in Result)
-            {
-                if (item.Username == _username && item.Password == _password)
-                {
-                    string Expire = _expireTime.Ticks.ToString();
-                    string TempToken = _username + "|" + Expire + "|" + _password;
-                    return new Tuple<string, bool>(new EncryptionHelper().Encrypt(TempToken, "Ok@jWt$@saDiWT#2"), true);
-                }
-            }
+
+            var Data = _config.GetSection("Services").Get<List<M_Services>>();
+            foreach (var item in Data)
+                if (item.ServiceName == _systemname)
+                    foreach (var li in item.Login)
+                    {
+                        if (li.Username == _username && li.Password == _password)
+                        {
+                            string Expire = _expireTime.Ticks.ToString();
+                            string TempToken = _username + "|" + Expire + "|" + _password;
+                            return new Tuple<string, bool>(new EncryptionHelper().Encrypt(TempToken, "Ok@jWt$@saDiWT#2"), true);
+                        }
+                    }
             return new Tuple<string, bool>("نام کاربری در سیستم موجود نیست", false);
         }
 
@@ -53,10 +59,12 @@ namespace MasterService.EndPoint.Api.Helper
                     return false;
                 else
                 {
-                    var Res = _config.GetSection("login").Get<List<M_AuthenticateRequest>>();
-                    foreach (var item in Res)
-                        if (item.Username == Username && item.Password == Password)
-                            return true;
+                    var Data = _config.GetSection("Services").Get<List<M_Services>>();
+                    foreach (var item in Data)
+                        if (item.ServiceName == _systemname)
+                            foreach (var li in item.Login)
+                                if (li.Username == Username && li.Password == Password)
+                                    return true;
                     return false;
                 }
             }

@@ -1,4 +1,5 @@
-﻿using MasterService.Core.Domain.Repo;
+﻿using MasterService.Core.Domain.QueryModel;
+using MasterService.Core.Domain.Repo;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace MasterService.Core.ApplicationService.Query
 
         public async Task<List<object>> Handle(FetchQuery request, CancellationToken cancellationToken)
         {
-            var result = await _repository.Select(request.Request);
+            var result = await _repository.Select(new GenericSummary { Request = request.Request, SystemName = request.SystemName });
             return result;
         }
     }

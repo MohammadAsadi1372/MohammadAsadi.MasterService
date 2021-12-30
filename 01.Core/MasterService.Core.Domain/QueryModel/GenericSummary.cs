@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MasterService.Core.Domain.QueryModel
 {
-    public interface IGenericSummary
+    public class GenericSummary
     {
         public string SystemName { get; set; }
         public Dictionary<string, object> Request { get; set; }

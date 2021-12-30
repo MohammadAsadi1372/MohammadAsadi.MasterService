@@ -5,7 +5,7 @@
         public bool Status { get; set; }
         public int StatusCode { get; set; }
         public string ErrorMessage { get; set; }
-        public dynamic Result { get; set; }
+        public object Result { get; set; }
 
         public M_MasterResponse()
         {
@@ -31,6 +31,17 @@
                 ErrorMessage = message,
                 Result = null,
                 StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
+
+        public M_MasterResponse Success(List<object> Result)
+        {
+            return new M_MasterResponse
+            {
+                ErrorMessage = null,
+                Result = Result,
+                Status = true,
+                StatusCode = StatusCodes.Status200OK
             };
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MasterService.Core.Domain.QueryModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,6 @@ namespace MasterService.Core.Domain.Repo
 {
     public interface IQueryRepository
     {
-        Task<List<object>> Select(Dictionary<string, object> Request);
+        Task<List<object>> Select(GenericSummary Request);
     }
 }

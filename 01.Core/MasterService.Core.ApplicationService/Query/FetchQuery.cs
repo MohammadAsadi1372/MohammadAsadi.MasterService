@@ -11,6 +11,7 @@ namespace MasterService.Core.ApplicationService.Query
 {
     public class FetchQuery : IRequest<List<object>>, IGenericSummary
     {
+        public string SystemName { get; set; }
         public Dictionary<string, object> Request { get; set; }
     }
 }

@@ -8,6 +8,10 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+IConfiguration configuration = new ConfigurationBuilder()
+                            .AddJsonFile("appsettings.json")
+                            .Build();
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -17,6 +21,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(Assembly.GetExecutingAssembly())
     .AddTransient<IRequestHandler<FetchQuery, List<object>>, FetchQueryHandler>();
 builder.Services.AddScoped<IQueryRepository, QueryRepository>();
+builder.Services.AddSingleton<IConfiguration>(configuration);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

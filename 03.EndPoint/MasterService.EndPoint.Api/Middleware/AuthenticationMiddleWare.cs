@@ -1,5 +1,6 @@
 ﻿using MasterService.EndPoint.Api.Helper;
 using MasterService.EndPoint.Api.Models;
+using System.Net;
 
 namespace MasterService.EndPoint.Api.Middleware
 {
@@ -22,8 +23,12 @@ namespace MasterService.EndPoint.Api.Middleware
                 {
                     string SystemName = httpContext.Request.Headers["X-SystemName"];
                     if (string.IsNullOrEmpty(SystemName))
+                    {
+                        httpContext.Response.Clear();
+                        httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         await httpContext.Response
                             .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: نام سیستم را مشخص کنید");
+                    }
                     else
                         foreach (var item in Data)
                             if (item.ServiceName == SystemName)
@@ -37,19 +42,29 @@ namespace MasterService.EndPoint.Api.Middleware
                                         if (IsUserValid(httpContext, SystemName))
                                             await nextDelegate.Invoke(httpContext);
                                         else
+                                        {
+                                            httpContext.Response.Clear();
+                                            httpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                                             await httpContext.Response
                                                 .WriteAsync($"Status Code: {401} " + Environment.NewLine + "Status Message:  Security error ");
+                                        }
                                     }
                                     else
                                         await nextDelegate.Invoke(httpContext);
                                 }
                 }
                 else
+                {
+                    httpContext.Response.Clear();
+                    httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     await httpContext.Response
                         .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: تنظیمات سیستم را وارد نمایید");
+                }
             }
             catch (Exception ex)
             {
+                httpContext.Response.Clear();
+                httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 await httpContext.Response
                     .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message:  {ex.Message} ");
             }

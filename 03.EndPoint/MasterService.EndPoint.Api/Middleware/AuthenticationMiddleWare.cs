@@ -14,6 +14,7 @@ namespace MasterService.EndPoint.Api.Middleware
             nextDelegate = next;
             this._config = config;
         }
+
         public async Task Invoke(HttpContext httpContext)
         {
             try
@@ -27,7 +28,7 @@ namespace MasterService.EndPoint.Api.Middleware
                         httpContext.Response.Clear();
                         httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                         await httpContext.Response
-                            .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: نام سیستم را مشخص کنید");
+                            .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: System name not specified ");
                     }
                     else
                         foreach (var item in Data)
@@ -58,7 +59,7 @@ namespace MasterService.EndPoint.Api.Middleware
                     httpContext.Response.Clear();
                     httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                     await httpContext.Response
-                        .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: تنظیمات سیستم را وارد نمایید");
+                        .WriteAsync($"Status Code: {StatusCodes.Status400BadRequest} " + Environment.NewLine + $"Status Message: System Settings not specified");
                 }
             }
             catch (Exception ex)
